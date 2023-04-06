@@ -1,0 +1,146 @@
+{% block title %} {{title}} {% endblock title %}
+
+{% block stylesheets %}
+
+<!-- accessing css file  -->
+<link rel="stylesheet" href="/static/css/style.css">
+<style>
+    /* can type specific css here */
+</style>
+{% endblock stylesheets %}
+
+
+{% block content %}
+    
+<div class="dropdown">
+  <button onclick="dropFunction()" class="dropbtn">Select Data</button>
+  <div id="myDropdown" class="dropdown-content">
+    {% for category in categories %}
+    <button id="{{category}}" class="category">{{category}}</button>
+    {% endfor %}
+  </div>
+</div>
+
+<button onclick="resetDate()">Reset Date</button>
+<input type="date" id="startDate">
+<input type="date" id="endDate">
+<button onclick="filterDate()">Apply Filter</button>
+
+<div>
+    <canvas id="myChart"></canvas>
+</div>
+
+
+{% endblock %}
+
+{% block javascripts %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.2.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+
+<script>
+
+  const myChart = document.getElementById('myChart');
+  // context data retrieval & parsing
+  var json_data = '{{json_data}}';
+  json_data = json_data.replaceAll('&#34;', '"');
+  json_data = JSON.parse(json_data);
+
+  // date label for filter & X axis
+  const labels = json_data['Date'];
+  const beginning = labels[0];
+  const end = labels[labels.length - 1];
+  // convert dates to timestamp to allow for operations while filtering
+  // need to account for timezone differences. setHours to 0,0,0,0 delays everything by 1 day
+  // must add day back in miliseconds
+  const convertedDates = labels.map(date => (new Date(date).setHours(0,0,0,0)) + (86400 * 1000));
+
+  // adding defaults to the date filter according to passed data
+  document.getElementById('startDate').value = beginning;
+  document.getElementById('startDate').setAttribute('min', beginning);
+  document.getElementById('startDate').setAttribute('max', end);
+  document.getElementById('endDate').value = end;
+  document.getElementById('endDate').setAttribute('min', beginning);
+  document.getElementById('endDate').setAttribute('max', end);
+
+  // line chart specifications
+  const chart = new Chart(myChart, {
+  type: 'line',
+  data: {
+    labels: labels,
+    datasets: [{
+      label: `LumberFut Dataset - Current Data = None`,
+      data: null,
+      borderWidth: 1
+    }]
+  },
+  options: {
+    scales: {
+      x : {
+        type : 'time',
+        time : {
+          unit : 'month'
+        }
+      },
+      y: {
+        beginAtZero: true
+      }
+    }
+  }
+});
+
+// dropdown function
+function dropFunction() {
+  document.getElementById("myDropdown").classList.toggle("show");
+}
+
+// date filter function
+function filterDate() {
+  const current_category = document.getElementById('myChart').getAttribute('current')
+  if (current_category === 'None'){
+    return alert('Please select data before applying a date filter')
+  }
+  else {
+    const first = (new Date(document.getElementById('startDate').value).setHours(0,0,0,0)) + (86400 * 1000);
+    const last = (new Date(document.getElementById('endDate').value).setHours(0,0,0,0)) + (86400 * 1000);
+    if (first > last){
+      return alert('The starting date needs to be earlier than the ending date')
+    }
+    else{
+      const filterDates = convertedDates.filter(date => date >= first && date <= last);
+      chart.data.labels = filterDates;
+
+      const firstIndex = convertedDates.indexOf(filterDates[0]);
+      const lastIndex = convertedDates.indexOf(filterDates[filterDates.length - 1]);
+
+      const newData = [...json_data[current_category]];
+      // remove everything that is later than the new end date
+      newData.splice(lastIndex + 1, filterDates.length);
+      // remove everything that is earlier than the new start date
+      newData.splice(0, firstIndex);
+
+      chart.data.datasets[0].data = newData;
+      chart.update();
+    }
+  }
+}
+
+function resetDate() {
+  document.getElementById('startDate').value = beginning
+  document.getElementById('endDate').value = end
+}
+
+// change the value of the current attribute for the chart depending on what is clicked
+window.onclick = function(event) {
+  if (event.target.matches('.category')){
+    myChart.setAttribute('current', event.target.id)
+    chart.data.datasets[0].label = `LumberFut Dataset - Current Data = ${event.target.id}`
+    // need to apply any current date filter when changing data, other wises indexes could be misaligned
+    filterDate()
+  }
+}
+
+</script>
+
+
+{% endblock javascripts %}
