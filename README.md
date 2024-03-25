@@ -1,6 +1,5 @@
-# Instructions for starting webapp
-All of the commands below must be ran from the workingdir folder. This project was done on the Ubuntu Linux
-distribution, but steps to run this project on Windows are also included.
+# Instructions for starting app
+All of the commands below must be ran from the workingdir folder. This project was done on the Ubuntu Linux distribution, but steps to run this project on Windows are also included.
 
 Setting up environment
 1. Create a virtual environment using: python3.8 -m venv venv (python -m venv venv if on Windows)
@@ -11,7 +10,7 @@ Setting up environment
 Uploading data to SQLite serverless database
 1. Run the database_upload.py file using: python database.upload.py
 
-Running the web app
+Running the app
 1. Use: flask --app test_app run 
 2. CRTL + left click on the url given to be taken to the index page
 
